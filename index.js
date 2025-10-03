@@ -1,6 +1,7 @@
 const { initializeData } = require("./db/db.connect");
 
 initializeData();
+const mongoose = require("mongoose");
 
 const express = require("express");
 
@@ -12,7 +13,6 @@ app.use(express.json());
 
 const SalesAgent = require("./models/SalesAgent.model");
 const Lead = require("./models/Lead.model");
-const { default: mongoose } = require("mongoose");
 
 //! Query for creating the new Lead
 
@@ -116,9 +116,7 @@ async function updateLead(leadId, dataToUpdate) {
   }
 }
 
-
 app.put("/leads/:id", async (req, res) => {
-
   try {
     const { name, source, salesAgent, status, timeToClose, priority } =
       req.body;
