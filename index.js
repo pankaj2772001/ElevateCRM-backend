@@ -11,14 +11,193 @@ const app = express();
 app.use(express.json());
 
 const SalesAgent = require("./models/SalesAgent.model");
+const Lead = require("./models/Lead.model");
+const { default: mongoose } = require("mongoose");
 
-app.get("/", (req, res) => {
-  res.send("Hello from the server");
+//! Query for creating the new Lead
+
+async function createNewLead(newLead) {
+  try {
+    const lead = new Lead(newLead);
+
+    const saveLead = await lead.save();
+
+    return saveLead;
+  } catch (error) {
+    throw error;
+  }
+}
+
+app.post("/leads", async (req, res) => {
+  try {
+    const { name, source, salesAgent, status, timeToClose, priority } =
+      req.body;
+
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({
+        error: "Invalid input: 'name' is required and must be a string.",
+      });
+    }
+
+    const allowedSources = ["Referral", "Website", "Advertisement", "Event"];
+
+    if (!source || !allowedSources.includes(source)) {
+      return res.status(400).json({
+        error:
+          "Invalid input: 'source' must be one of " + allowedSources.join(", "),
+      });
+    }
+
+    if (salesAgent && !mongoose.Types.ObjectId.isValid(salesAgent)) {
+      return res.status(400).json({
+        error: "Invalid input: 'salesAgent' must be a valid ObjectId.",
+      });
+    }
+
+    const allowedStatus = [
+      "New",
+      "Contacted",
+      "Qualified",
+      "Proposal Sent",
+      "Closed",
+    ];
+
+    if (!status || !allowedStatus.includes(status)) {
+      return res.status(400).json({
+        error:
+          "Invalid input: 'status' must be one of " +
+          allowedStatuses.join(", "),
+      });
+    }
+
+    if (timeToClose <= 0) {
+      return res.status(400).json({
+        error: "Invalid input: 'timeToClose' must be a positive integer.",
+      });
+    }
+
+    const allowedPriority = ["High", "Medium", "Low"];
+
+    if (!priority || !allowedPriority.includes(priority)) {
+      return res.status(400).json({
+        error:
+          "Invalid input: 'priority' must be one of " +
+          allowedPriority.join(", "),
+      });
+    }
+
+    if (salesAgent) {
+      const agentExists = await SalesAgent.findById(salesAgent);
+
+      if (!agentExists) {
+        return res.status(404).json({ error: "Sales agent ID not found." });
+      }
+    }
+
+    const lead = await createNewLead(req.body);
+
+    res.status(201).json(lead);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
+
+//! QUery for the updating the existing lead
+
+async function updateLead(leadId, dataToUpdate) {
+  try {
+    const updatatedLead = await Lead.findByIdAndUpdate(leadId, dataToUpdate, {
+      new: true,
+    });
+
+    return updatatedLead;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+app.put("/leads/:id", async (req, res) => {
+
+  try {
+    const { name, source, salesAgent, status, timeToClose, priority } =
+      req.body;
+
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({
+        error:
+          "Invalid input: 'source' must be one of " + allowedSources.join(", "),
+      });
+    }
+
+    const allowedSources = ["Referral", "Website", "Advertisement", "Event"];
+
+    if (!source || !allowedSources.includes(source)) {
+      return res.status(400).json({
+        error:
+          "Invalid input: 'source' must be one of " + allowedSources.join(", "),
+      });
+    }
+
+    if (salesAgent && !mongoose.Types.ObjectId.isValid(salesAgent)) {
+      return res.status(400).json({
+        error: "Invalid input: 'salesAgent' must be a valid ObjectId.",
+      });
+    }
+
+    const allowedStatus = [
+      "New",
+      "Contacted",
+      "Qualified",
+      "Proposal Sent",
+      "Closed",
+    ];
+
+    if (!status || !allowedStatus.includes(status)) {
+      return res.status(400).json({
+        error:
+          "Invalid input: 'status' must be one of " +
+          allowedStatuses.join(", "),
+      });
+    }
+
+    if (timeToClose <= 0) {
+      return res.status(400).json({
+        error: "Invalid input: 'timeToClose' must be a positive integer.",
+      });
+    }
+
+    const allowedPriority = ["High", "Medium", "Low"];
+
+    if (!priority || !allowedPriority.includes(priority)) {
+      return res.status(400).json({
+        error:
+          "Invalid input: 'priority' must be one of " +
+          allowedPriority.join(", "),
+      });
+    }
+
+    if (salesAgent) {
+      const agentExists = await SalesAgent.findById(salesAgent);
+
+      if (!agentExists) {
+        return res.status(404).json({ error: "Sales agent ID not found." });
+      }
+    }
+
+    const updatatedLead = await updateLead(req.params.id, req.body);
+
+    res.status(200).json(updatatedLead);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+//! Query for the creating the new sales Agent
 
 async function createNewSalesAgent(newAgent) {
   try {
-    const agent = await new SalesAgent(newAgent);
+    const agent = new SalesAgent(newAgent);
 
     const savedAgent = await agent.save();
 
@@ -35,19 +214,17 @@ app.post("/agents", async (req, res) => {
     res.status(201).json(newAgent);
   } catch (error) {
     if (error.code === 11000) {
-      return res
-        .status(409)
-        .json({
-          message: "Sales agent with email 'john@example.com' already exists.",
-        });
-    }
-    return res
-      .status(400)
-      .json({
-        message: "Invalid input: 'email' must be a valid email address.",
+      return res.status(409).json({
+        message: "Sales agent with email 'john@example.com' already exists.",
       });
+    }
+    return res.status(400).json({
+      message: "Invalid input: 'email' must be a valid email address.",
+    });
   }
 });
+
+//! PORT CONNECTION
 
 const PORT = process.env.PORT || 3000;
 
