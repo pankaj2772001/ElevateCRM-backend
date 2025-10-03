@@ -215,9 +215,7 @@ app.delete("/leads/:id", async (req, res) => {
       res.status(200).json({ message: "Lead deleted successfully." });
     }
   } catch (error) {
-
     res.status(400).json({ error: error.message });
-
   }
 });
 
@@ -237,6 +235,13 @@ async function createNewSalesAgent(newAgent) {
 
 app.post("/agents", async (req, res) => {
   try {
+    const { name, email } = req.body;
+
+    if (!name || typeof name !== "string") {
+      return res
+        .status(400)
+        .json({ error: "name is required and must be a string." });
+    }
     const newAgent = await createNewSalesAgent(req.body);
 
     res.status(201).json(newAgent);
@@ -252,7 +257,31 @@ app.post("/agents", async (req, res) => {
   }
 });
 
-//! PORT CONNECTION
+//! Query to get all agents
+
+async function getAllAgents() {
+  try {
+    const allAgents = await SalesAgent.find();
+
+    return allAgents;
+  } catch (error) {
+    throw error;
+  }
+}
+
+app.get("/agents", async (req, res) => {
+  try {
+    const allAgents = await getAllAgents();
+
+    if (allAgents.length === 0) {
+      res.status(404).json({ message: "No Agents Found." });
+    } else {
+      res.status(200).json(allAgents);
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch agents" });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 
