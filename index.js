@@ -191,6 +191,36 @@ app.put("/leads/:id", async (req, res) => {
   }
 });
 
+//! Query for deleting the lead
+
+async function deleteLead(leadId) {
+  try {
+    const deletedLead = await Lead.findByIdAndDelete(leadId);
+
+    return deletedLead;
+  } catch (error) {
+    throw error;
+  }
+}
+
+app.delete("/leads/:id", async (req, res) => {
+  try {
+    const deletedLead = await deleteLead(req.params.id);
+
+    if (!deletedLead) {
+      res
+        .status(404)
+        .json({ error: "Lead with ID '64c34512f7a60e36df44' not found." });
+    } else {
+      res.status(200).json({ message: "Lead deleted successfully." });
+    }
+  } catch (error) {
+
+    res.status(400).json({ error: error.message });
+
+  }
+});
+
 //! Query for the creating the new sales Agent
 
 async function createNewSalesAgent(newAgent) {
